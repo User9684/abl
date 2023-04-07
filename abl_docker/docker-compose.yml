@@ -1,8 +1,7 @@
-version: '1'
+version: '2'
 
 volumes:
   db:
-  redis:
 
 networks:
   default:
