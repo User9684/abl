@@ -15,4 +15,6 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app /go/bin/app /app
 USER app
 
+COPY ./app/activities.json /
+
 ENTRYPOINT ["/app"]

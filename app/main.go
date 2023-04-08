@@ -19,15 +19,6 @@ var d *mongo.Database
 var Activities map[string]string
 
 func BotInit() {
-	// Register activity map.
-	file, err := os.Open("./activities.json")
-	if err != nil {
-		fmt.Printf("Failed to open activities file! %s", err)
-	}
-
-	json.NewDecoder(file).Decode(&Activities)
-
-	file.Close()
 	// Create bot client.
 	session, err := discordgo.New(os.Getenv("TOKEN"))
 	if err != nil {
@@ -60,11 +51,23 @@ func main() {
 	fmt.Println("Verifying all collections...")
 	CollectionCheck(d)
 
+	// Register activity map.
+	file, err := os.Open("/activities.json")
+	if err != nil {
+		fmt.Printf("Failed to open activities file! %s\n", err)
+	}
+
+	json.NewDecoder(file).Decode(&Activities)
+
+	file.Close()
+
+	RegisterActivityChoices()
+
 	// Bot setup.
 	fmt.Println("Starting the bot...")
 	BotInit()
 
-	err := s.Open()
+	err = s.Open()
 	if err != nil {
 		fmt.Printf("Cannot open the session: %v\n", err)
 		return
