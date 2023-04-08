@@ -4,6 +4,20 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var activityChoices []*discordgo.ApplicationCommandOptionChoice
+
+func RegisterActivityChoices() {
+	activityChoices = make([]*discordgo.ApplicationCommandOptionChoice, len(Activities))
+	for id, name := range Activities {
+		newChoice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  name,
+			Value: id,
+		}
+
+		activityChoices = append(activityChoices, newChoice)
+	}
+}
+
 var Commands = []*discordgo.ApplicationCommand{
 	{
 		Name:        "blacklist",
@@ -15,12 +29,7 @@ var Commands = []*discordgo.ApplicationCommand{
 				Name:        "activity",
 				Description: "Activity to blacklist",
 				Required:    true,
-				Choices: []*discordgo.ApplicationCommandOptionChoice{
-					{
-						Name:  "Putt Party",
-						Value: "945737671223947305",
-					},
-				},
+				Choices:     activityChoices,
 			},
 		},
 	},

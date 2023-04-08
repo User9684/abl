@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 var GuildVoiceConnections = make(map[string]string)
@@ -71,17 +69,13 @@ func RegisterEvents() {
 			}
 
 			if isInArray(activity.ApplicationID, guildData.Blacklists) {
-				var Document ActivityDocument
+				activityName, ok := Activities[activity.ApplicationID]
 
-				a := d.Collection("activities")
-				filter := bson.D{{
-					Key:   "activityID",
-					Value: activity.ApplicationID,
-				}}
+				if !ok {
+					continue
+				}
 
-				a.FindOne(context.TODO(), filter).Decode(&Document)
-
-				blacklistedActivity = Document.ActivityName
+				blacklistedActivity = activityName
 				break
 			}
 		}

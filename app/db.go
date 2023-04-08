@@ -27,7 +27,6 @@ type AlreadyBlacklisted struct{}
 
 var Collections = []string{
 	"guilddata",
-	"activities",
 }
 
 func (e *AlreadyBlacklisted) Error() string {

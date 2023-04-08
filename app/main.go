@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,8 +16,18 @@ var DisconnectMessage = "<@!%s> you have been disconnected from <#%s> because th
 var s *discordgo.Session
 var c *mongo.Client
 var d *mongo.Database
+var Activities map[string]string
 
 func BotInit() {
+	// Register activity map.
+	file, err := os.Open("./activities.json")
+	if err != nil {
+		fmt.Printf("Failed to open activities file! %s", err)
+	}
+
+	json.NewDecoder(file).Decode(&Activities)
+
+	file.Close()
 	// Create bot client.
 	session, err := discordgo.New(os.Getenv("TOKEN"))
 	if err != nil {
@@ -59,10 +72,10 @@ func main() {
 
 	CmdInit(s)
 
-	// Prevent the process from terminating.
-	for {
-
-	}
+	// Waits for SIGTERM.
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
 }
 
 func isInArray(value string, array []string) bool {
