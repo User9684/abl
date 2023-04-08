@@ -61,8 +61,6 @@ func main() {
 
 	file.Close()
 
-	RegisterActivityChoices()
-
 	// Bot setup.
 	fmt.Println("Starting the bot...")
 	BotInit()

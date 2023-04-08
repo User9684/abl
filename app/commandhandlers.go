@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var ActivityCommandDefaultChoices = make([]*discordgo.ApplicationCommandOptionChoice, 0, 25)
 
 var CommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 	"rep": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -20,21 +23,26 @@ var CommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 		})
 	},
 	"blacklist": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		// Convert options to map
-		optionMap := mapOptions(i.ApplicationCommandData().Options)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			// Convert options to map
+			optionMap := mapOptions(i.ApplicationCommandData().Options)
 
-		if err := blacklistActivity(i.GuildID, fmt.Sprintf("%v", optionMap["activity"].Value)); err != nil {
-			fmt.Println(err)
-			cmdError(i, err)
-			return
+			if err := blacklistActivity(i.GuildID, fmt.Sprintf("%v", optionMap["activity"].Value)); err != nil {
+				fmt.Println(err)
+				cmdError(i, err)
+				return
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("You selected:  `%v`", optionMap["activity"].Value),
+				},
+			})
+		case discordgo.InteractionApplicationCommandAutocomplete:
+			activityCommandAutocomplete(i)
 		}
-
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You selected:  `%v`", optionMap["activity"].Value),
-			},
-		})
 	},
 	"getvoicestate": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Convert options to map
@@ -96,6 +104,56 @@ func CmdInit(s *discordgo.Session) {
 			fmt.Printf("Cannot create '%v' command: %v\n", v.Name, err)
 		}
 		registeredCommands[i] = cmd
+	}
+
+	for id, name := range Activities {
+		choice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  name,
+			Value: id,
+		}
+
+		ActivityCommandDefaultChoices = append(ActivityCommandDefaultChoices, choice)
+
+		if len(ActivityCommandDefaultChoices) >= 25 {
+			break
+		}
+	}
+}
+
+// Autocomplete function for activity based commands.
+func activityCommandAutocomplete(i *discordgo.InteractionCreate) {
+	data := i.ApplicationCommandData()
+	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, 25)
+	input := strings.ToLower(data.Options[0].StringValue())
+
+	for id, name := range Activities {
+		if len(choices) >= 25 {
+			break
+		}
+
+		choice := &discordgo.ApplicationCommandOptionChoice{
+			Name:  name,
+			Value: id,
+		}
+
+		if strings.Contains(strings.ToLower(name), input) {
+			choices = append(choices, choice)
+		}
+	}
+
+	if len(input) <= 1 {
+		choices = ActivityCommandDefaultChoices
+	}
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: choices,
+		},
+	})
+
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
